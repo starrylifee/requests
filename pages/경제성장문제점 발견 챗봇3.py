@@ -109,4 +109,4 @@ if st.button('질문하기') or st.session_state.user_input:
     #대화 이력을 마크다운으로 보기 좋게 표시
     if st.session_state.conversation_history:
         conversation_markdown = "\n\n".join(st.session_state.conversation_history)
-    st.markdown(conversation_markdown)
+        st.markdown(conversation_markdown)
