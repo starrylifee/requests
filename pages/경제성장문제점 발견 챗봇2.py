@@ -1,58 +1,82 @@
-import google.generativeai as genai
+from openai import OpenAI
 import streamlit as st
+import time
 
-# secrets.toml 파일에서 gemini_api_key1 값 가져오기
-gemini_api_key1 = st.secrets["gemini_api_key1"]
+# 업데이트된 Assistant ID
+assistant_id = "asst_ZSXICkAPTIg5ZsEFJxWmkJmj"
+client = OpenAI(api_key=st.secrets["api_key1"])
 
-# Gemini API 키 설정
-genai.configure(api_key=gemini_api_key1)
+# 비밀번호 입력
+password = st.text_input("비밀번호를 입력하세요:", type="password")
+correct_password = st.secrets["password1"]
 
-generation_config = {
-    "temperature": 0.9,
-    "top_p": 1,
-    "top_k": 1,
-    "max_output_tokens": 2048,
-}
-safety_settings = [
-    {
-        "category": "HARM_CATEGORY_HARASSMENT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    },
-    {
-        "category": "HARM_CATEGORY_HATE_SPEECH",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    },
-    {
-        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    },
-    {
-        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    },
-]
-model = genai.GenerativeModel(model_name="gemini-1.0-pro", generation_config=generation_config, safety_settings=safety_settings)
-convo = model.start_chat(history=[{"role": "user", "parts": ["안녕하세요!"]}])
+# 입력된 비밀번호가 정확한지 확인
+if password != correct_password:
+    st.error("비밀번호가 틀렸습니다. 올바른 비밀번호를 입력해주세요.")
+    st.stop()
 
-initial_response = "안녕하세요! 무엇을 도와드릴까요?" if convo.last is None else convo.last.parts[0]
+with st.sidebar:
+    # 스레드 ID 관리
+    if "thread_id" not in st.session_state:
+        st.session_state.thread_id = ""
 
-st.title("💬 Chatbot")
-st.caption("🚀 A streamlit chatbot powered by Google Gemini")
+    thread_btn = st.button("Create a new thread")
 
+    if thread_btn:
+        thread = client.beta.threads.create()
+        st.session_state.thread_id = thread.id  # 스레드 ID를 session_state에 저장
+        st.subheader(f"Created Thread ID: {st.session_state.thread_id}")
+        st.info("스레드가 생성되었습니다.")
+        st.info("스레드 ID를 기억하면 대화내용을 이어갈 수 있습니다.")
+        st.divider()
+        st.subheader("추천 질문")
+        st.info("OOOO문제가 있어.")
+
+# 스레드 ID 입력란을 자동으로 업데이트
+thread_id = st.text_input("Thread ID", value=st.session_state.thread_id)
+
+st.title("법률제작 보조 챗봇")
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        {"role": "user", "content": "안녕하세요!"},
-        {"role": "assistant", "content": initial_response}
-    ]
+    st.session_state["messages"] = [{"role": "assistant", "content": "안녕하세요, 저는 경제발전의 문제점을 찾는 것을 도와주는 봇입니다. 어떻게 도와드릴까요?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 if prompt := st.chat_input():
+
+    if not thread_id:
+        st.error("Please add your thread_id to continue.")
+        st.stop()
+
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
+
+    response = client.beta.threads.messages.create(
+        thread_id,
+        role="user",
+        content=prompt,
+    )
+
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=assistant_id
+    )
+
+    run_id = run.id
+
+    while True:
+        run = client.beta.threads.runs.retrieve(
+            thread_id=thread_id,
+            run_id=run_id
+        )
+        if run.status == "completed":
+            break
+        else:
+            time.sleep(2)
+
+    thread_messages = client.beta.threads.messages.list(thread_id)
+
+    msg = thread_messages.data[0].content[0].text.value
     
-    convo.send_message(prompt)
-    response = convo.last.parts[0] if convo.last is not None else "죄송합니다. 응답을 받지 못했습니다."
-    
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.messages.append({"role": "assistant", "content": msg})
+    st.chat_message("assistant").write(msg)

@@ -36,15 +36,3 @@ if 'convo' not in st.session_state:
 
 user_input = st.text_input("경제성장 문제점에 대해 궁금한 점을 입력해주세요:", key="user_input")
 
-if st.button('질문하기') or st.session_state.user_input:
-    convo = st.session_state.convo
-
-    if st.session_state.user_input:
-        convo.extend_conversation([{"role": "user", "parts": [st.session_state.user_input]}])
-    else:
-        st.error("텍스트를 입력해주세요.")
-
-    convo.extend_conversation([{"role": "user", "parts": [st.session_state.user_input]}])
-    response = convo.last.text
-    st.session_state.user_input = ""
-    st.markdown(response)
