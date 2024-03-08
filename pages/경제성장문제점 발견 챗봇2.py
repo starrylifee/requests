@@ -35,7 +35,7 @@ with st.sidebar:
 # 스레드 ID 입력란을 자동으로 업데이트
 thread_id = st.text_input("Thread ID", value=st.session_state.thread_id)
 
-st.title("법률제작 보조 챗봇")
+st.title("경제발전의 문제점을 찾는 것을 도와주는 봇")
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "안녕하세요, 저는 경제발전의 문제점을 찾는 것을 도와주는 봇입니다. 어떻게 도와드릴까요?"}]
 
