@@ -34,14 +34,18 @@ def configure_genai():
 # 스트림릿 UI 설정
 st.title("한국 경제성장의 숨겨진 문제점 탐색")
 
+# 사용자 입력을 세션 상태에 저장하기 위한 초기화
+if 'user_input' not in st.session_state:
+    st.session_state.user_input = ""
+
 # 대화 이력을 저장하기 위한 세션 상태 초기화
 if 'conversation_history' not in st.session_state:
     st.session_state.conversation_history = []
 
 # 사용자 입력
-user_input = st.text_input("한국의 경제성장에 대해 궁금한 점을 입력해주세요:")
+user_input = st.text_input("한국의 경제성장에 대해 궁금한 점을 입력해주세요:", key="user_input")
 
-if st.button('질문하기'):
+if st.button('질문하기') or st.session_state.user_input:
     # API 설정 및 모델 초기화
     model = configure_genai()
 
@@ -90,17 +94,19 @@ if st.button('질문하기'):
         },
     ])
     
-    # 사용자 입력을 대화 이력에 추가
-    st.session_state.conversation_history.append(f"User: {user_input}")
+    # 사용자 입력과 모델 응답을 대화 이력에 추가
+    st.session_state.conversation_history.append(f"User: {st.session_state.user_input}")
 
     # 사용자의 입력을 모델에 전송하고 응답 받기
     convo.send_message(user_input)
     response = convo.last.text
 
     # 모델의 응답을 대화 이력에 추가
-    st.session_state.conversation_history.append(f"Model: {response}")
+    st.session_state.conversation_history.append(response)
 
-    # 대화 이력 출력
-    st.write("대화 이력:")
-    for message in st.session_state.conversation_history:
-        st.text(message)
+    # 입력 필드 초기화
+    st.session_state.user_input = ""
+    #대화 이력을 마크다운으로 보기 좋게 표시
+    if st.session_state.conversation_history:
+        conversation_markdown = "\n\n".join(st.session_state.conversation_history)
+    st.markdown(conversation_markdown)
