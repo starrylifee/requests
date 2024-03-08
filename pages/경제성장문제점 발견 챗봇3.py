@@ -19,7 +19,7 @@ def configure_genai():
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
     ]
 
-    model = genai.GenerativeModel(model_name="gemini-1.0-pro",
+    model = genai.GenerativeModel(model_name="gemini-pro",  # 모델 이름 확인 필요, 예시로 'gemini-pro' 사용
                                   generation_config=generation_config,
                                   safety_settings=safety_settings)
     return model
@@ -28,11 +28,17 @@ st.title("한국 경제성장의 숨겨진 문제점 탐색")
 
 if 'convo' not in st.session_state:
     model = configure_genai()
-    convo = model.start_chat(history=[
-        {"role": "system", "parts": ["한국의 경제성장 과정에서 발생할 수 있는 문제점에 대해 토론해봅시다. 대화상태를 어린이로 한정하여 화법을 사용하고, 문제점을 어린이 스스로 생각할 수 있도록 예를 들지 않고 소크라테스 문답법을 활용하여 학생 스스로 유추하도록 해줘. 학생이 바르게 유추하면 칭찬해줘"]}
-    ])
+    convo = model.start_chat(history=[])  # 초기 대화 상태 설정, 'system' 메시지 제거
     st.session_state.convo = convo
-
+    st.session_state.chat_history = []  # 대화 기록을 저장할 리스트 초기화
 
 user_input = st.text_input("경제성장 문제점에 대해 궁금한 점을 입력해주세요:", key="user_input")
 
+if user_input:  # 사용자 입력 처리
+    st.session_state.chat_history.append(f"당신: {user_input}")  # 사용자 입력을 대화 기록에 추가
+    response = st.session_state.convo.send_message(user_input)  # 수정된 메서드 사용
+    response_text = response.text if response.text else "답변을 받지 못했습니다. 다시 시도해주세요."
+    st.session_state.chat_history.append(f"챗봇: {response_text}")  # 챗봇의 응답을 대화 기록에 추가
+
+for line in st.session_state.chat_history:  # 누적된 대화 기록을 화면에 출력
+    st.text(line)
